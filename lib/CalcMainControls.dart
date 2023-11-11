@@ -22,11 +22,11 @@ class CalcMainControls extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            getRowControls(["C","( )","%","/"]),
+            getRowControls(["C","","","/"]),
             getRowControls(["7","8","9","*"]),
             getRowControls(["4","5","6","-"]),
             getRowControls(["1","2","3","+"]),
-            getRowControls(["±","0",".","="]),
+            getRowControls(["0",".","","="]),
 
           ],
         ),
@@ -38,19 +38,17 @@ class CalcMainControls extends StatelessWidget {
   Row getRowControls(List<String> s){
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        getControl(s[0]),
-        getControl(s[1]),
-        getControl(s[2]),
-        getControl(s[3]),
-      ],
+      children: s.map((item) => getControl(item)).toList(),
     );
   }
 
+
+
   Padding getControl(String s) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: FloatingActionButton(
+    if (s.isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: FloatingActionButton(
           backgroundColor: Colors.grey.shade50,
           elevation: 0,
           child: Text(
@@ -60,11 +58,30 @@ class CalcMainControls extends StatelessWidget {
                 fontSize: 20
             ),
           ),
-        onPressed: () {
-          onButtonPressed(s);  // Здесь вызывается callback-функция
-        },
-      ),
-    );
+          onPressed: () {
+            onButtonPressed(s); // Здесь вызывается callback-функция
+          },
+        ),
+      );
+    } else {
+      return Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: FloatingActionButton(
+          backgroundColor: Colors.transparent, // делает фон прозрачным
+          elevation: 0, // убирает тень
+          foregroundColor: Colors.transparent,
+          child: Text(
+            s,
+            style: const TextStyle(
+                color: Color.fromRGBO(0, 0, 0, 80),
+                fontSize: 20
+            ),
+          ),
+          onPressed: null,
+        ),
+      );
+    }
+
   }
 
 }

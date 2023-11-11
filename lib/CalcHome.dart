@@ -19,66 +19,62 @@ class _CalcHomeState extends State<CalcHome> {
   String input = "";
   String preResult = "";
 
+  // Прозошло нажатие одной из основной клавиш управления
+  void handleMainControlPress(String newSymbol) {
 
-  void handleMainControlPress(String value) {
+    String currentInput = input;
 
-    // Определить какой тип клавиши нажат
-    // Проверить, какой последний элемент в выводе (Число, Число с минусом, Знак)
-    // Решить, какое действие сделать:
-    //  -Добавить этот "знак" в вывод
-    //  -Заменить последний элемент в выводе
-    //  -Удалить вывод и preResult ( С )
-    //  -Вставить в вывод preResult ( = )
-    //  -Ничего
-    // Обновить вывод и preResult при надобности
+    // Проверяем, является ли новый символ цифрой
+    if (RegExp(r'[0-9]').hasMatch(newSymbol)) {
+      // Если новый символ - ноль, проверяем условия для его добавления
+      if (newSymbol == '0') {
+        if (currentInput.isNotEmpty) {
+          currentInput += newSymbol;
+        } else {
+          // Добавляем ноль только если он первый символ
+          currentInput = '0';
+        }
+      } else {
+        // Для других цифр просто добавляем символ
+        currentInput += newSymbol;
+      }
+    } else if (newSymbol == '.' || RegExp(r'[\+\-\*/]').hasMatch(newSymbol)) {
+      // Для точки и арифметических операторов проверяем, что последний символ - цифра
+      if (currentInput.isNotEmpty && RegExp(r'[0-9]').hasMatch(currentInput[currentInput.length - 1])) {
+        currentInput += newSymbol;
+      }
+    } else if (RegExp(r'[\+\-\*/]').hasMatch(newSymbol)) {
+      // Для арифметических операторов убедимся, что предыдущий символ не оператор
+      if (currentInput.isNotEmpty && !RegExp(r'[\+\-\*/]').hasMatch(currentInput[currentInput.length - 1])) {
+        currentInput += newSymbol;
+      }
+    }else if (newSymbol == 'C') {
+      currentInput = '';
+    }else if (newSymbol == '=') {
+      if (preResult.isNotEmpty) {
+        currentInput = preResult;
+        preResult = "";
+      }else {
+        print("Нельзя! Допишите выражение");
+      }
+    }
 
-
-    // Всего 10 знаков
-    // Основные: + - × ÷
-    //    - Заменяются при наложении друг на друга
-
-    // Дополнительные: ± , () %
-    //    "±"
-    //    - меняет знак, toggle
-
-    //    ","
-    //    - Если ставится после знака, то перед ним появляется 0:  "0,"
-    //    - Иначе ставим после числа;
-
-    //    "( )"
-    //    - пиздец
-
-    //    "%"
-    //    - Нельзя установить в пустое поле
-    //    - Заменяется при установке на самого себя
-    //    - Если после него ставится число, то добавляется умножение: "%*7"
-
-
-    // Результативные: C =
-    //    "="
-    //    - preResult становится на место input
-    //    - preResult становится пустым
-    //
-    //    "C"
-    //    -Очистка preResult и input
-    //
-    //
-
-
+    // Обновляем состояние ввода
     setState(() {
-      input = input == "0" ? value : input + value;
+      input = currentInput;
+      preResult = refreshPreResult();
     });
 
-    refreshPreResult();
   }
 
+  // Прозошло нажатие одной из дополнительных клавиш управления
   void handleSecondControlPress(String value) {
 
     setState(() {
       switch (value){
         case "Back":
           input = input == "" ? input : input.replaceRange(input.length-1, null, "");
-          refreshPreResult();
+          preResult = refreshPreResult();
           break;
         case "History":
           // История которую я не напишу наверное...
@@ -89,32 +85,75 @@ class _CalcHomeState extends State<CalcHome> {
   }
 
   void handleSecondControlLongPress() {
-
     setState(() {
           input = "";
-
-    });
-    refreshPreResult();
-  }
-
-  void refreshPreResult(){
-    setState(() {
-      try{
-        Parser p = Parser();
-        Expression exp = p.parse(input);
-
-        ContextModel cm = ContextModel();
-        double eval = exp.evaluate(EvaluationType.REAL, cm);
-
-        preResult = eval.toString();
-      }
-      catch(e){
-        preResult = "";
-
-
-      }
+          preResult = "";
     });
   }
+
+  String refreshPreResult() {
+
+    if (input.isEmpty) return "";
+
+    RegExp numRegExp = RegExp(r'\d+\.?\d*');
+    RegExp opRegExp = RegExp(r'[\+\-\*/]');
+
+    List<double> numbers = numRegExp.allMatches(input)
+        .map((match) => double.parse(match.group(0)!))
+        .toList();
+    List<String> operators = opRegExp.allMatches(input)
+        .map((match) => match.group(0)!)
+        .toList();
+
+    try{
+
+
+      // Функция для выполнения операции
+      double performOperation(double a, double b, String op) {
+        switch (op) {
+          case '*':
+            return a * b;
+          case '/':
+            return a / b;
+          case '+':
+            return a + b;
+          case '-':
+            return a - b;
+          default:
+            throw Exception('О господи что случилось опять все сломалось');
+        }
+      }
+
+      // Вычисление приоритетных операций (* и /)
+      for (int i = 0; i < operators.length; i++) {
+        if (operators[i] == '*' || operators[i] == '/') {
+          numbers[i] = performOperation(numbers[i], numbers[i + 1], operators[i]);
+          numbers.removeAt(i + 1);
+          operators.removeAt(i);
+          i--;
+        }
+      }
+
+      // Вычисление оставшихся операций (+ и -)
+      while (operators.isNotEmpty) {
+        numbers[0] = performOperation(numbers[0], numbers[1], operators[0]);
+        numbers.removeAt(1);
+        operators.removeAt(0);
+      }
+    }
+    catch (Exception){
+      print(Exception);
+      return "";
+    }
+
+
+    String result = (numbers[0] % 1 == 0)
+        ? numbers[0].toInt().toString()
+        : numbers[0].toString();
+
+    return result;
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +187,7 @@ class _CalcHomeState extends State<CalcHome> {
                   // КОНТЕЙНЕР КНОПОК КАЛЬКУЛЯТОРА
                   Container(
                     width: width,
-                    height: height - (height / 3) - 24,
+                    height: height - (height / 3) - 27,
                     color: Colors.white,
                     child: CalcMainControls(onButtonPressed: handleMainControlPress),
                   ),
@@ -161,13 +200,4 @@ class _CalcHomeState extends State<CalcHome> {
   }
 }
 
-int defineInputType(text){
-  // 0 - число;
-  // 1 - знак;
-  //
-  //
-  //
-
-  return 1;
-}
 
