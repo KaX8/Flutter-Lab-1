@@ -26,7 +26,7 @@ class CalcMainControls extends StatelessWidget {
             getRowControls(["7","8","9","*"]),
             getRowControls(["4","5","6","-"]),
             getRowControls(["1","2","3","+"]),
-            getRowControls(["0",".","","="]),
+            getRowControls(["0","^",".","="]),
 
           ],
         ),

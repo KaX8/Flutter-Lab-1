@@ -1,8 +1,5 @@
-import 'dart:ffi';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:math_expressions/math_expressions.dart';
 import 'package:test_fl_kt/CalcMainControls.dart';
 import 'package:test_fl_kt/CalcSecondControls.dart';
 
@@ -38,14 +35,14 @@ class _CalcHomeState extends State<CalcHome> {
         // Для других цифр просто добавляем символ
         currentInput += newSymbol;
       }
-    } else if (newSymbol == '.' || RegExp(r'[\+\-\*/]').hasMatch(newSymbol)) {
+    } else if (newSymbol == '.' || RegExp(r'[\^\+\-\*/]').hasMatch(newSymbol)) {
       // Для точки и арифметических операторов проверяем, что последний символ - цифра
       if (currentInput.isNotEmpty && RegExp(r'[0-9]').hasMatch(currentInput[currentInput.length - 1])) {
         currentInput += newSymbol;
       }
-    } else if (RegExp(r'[\+\-\*/]').hasMatch(newSymbol)) {
+    } else if (RegExp(r'[\^\+\-\*/]').hasMatch(newSymbol)) {
       // Для арифметических операторов убедимся, что предыдущий символ не оператор
-      if (currentInput.isNotEmpty && !RegExp(r'[\+\-\*/]').hasMatch(currentInput[currentInput.length - 1])) {
+      if (currentInput.isNotEmpty && !RegExp(r'[\^\+\-\*/]').hasMatch(currentInput[currentInput.length - 1])) {
         currentInput += newSymbol;
       }
     }else if (newSymbol == 'C') {
@@ -96,7 +93,7 @@ class _CalcHomeState extends State<CalcHome> {
     if (input.isEmpty) return "";
 
     RegExp numRegExp = RegExp(r'\d+\.?\d*');
-    RegExp opRegExp = RegExp(r'[\+\-\*/]');
+    RegExp opRegExp = RegExp(r'[\^\+\-\*/]');
 
     List<double> numbers = numRegExp.allMatches(input)
         .map((match) => double.parse(match.group(0)!))
@@ -111,6 +108,8 @@ class _CalcHomeState extends State<CalcHome> {
       // Функция для выполнения операции
       double performOperation(double a, double b, String op) {
         switch (op) {
+          case '^':
+            return pow(a,b);
           case '*':
             return a * b;
           case '/':
@@ -126,7 +125,7 @@ class _CalcHomeState extends State<CalcHome> {
 
       // Вычисление приоритетных операций (* и /)
       for (int i = 0; i < operators.length; i++) {
-        if (operators[i] == '*' || operators[i] == '/') {
+        if (operators[i] == '*' || operators[i] == '/' || operators[i] == '^') {
           numbers[i] = performOperation(numbers[i], numbers[i + 1], operators[i]);
           numbers.removeAt(i + 1);
           operators.removeAt(i);
@@ -198,6 +197,17 @@ class _CalcHomeState extends State<CalcHome> {
       ),
     );
   }
+}
+
+double pow(double a, double b){
+  double result = a;
+
+  while(b > 1){
+    result *= a;
+    b--;
+  }
+
+  return result;
 }
 
 
