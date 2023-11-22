@@ -35,14 +35,18 @@ class _CalcHomeState extends State<CalcHome> {
         // Для других цифр просто добавляем символ
         currentInput += newSymbol;
       }
-    } else if (newSymbol == '.' || RegExp(r'[\^\+\-\*/]').hasMatch(newSymbol)) {
+    } else if (newSymbol == '.' || RegExp(r'[\^\+\*/]').hasMatch(newSymbol)) {
       // Для точки и арифметических операторов проверяем, что последний символ - цифра
       if (currentInput.isNotEmpty && RegExp(r'[0-9]').hasMatch(currentInput[currentInput.length - 1])) {
         currentInput += newSymbol;
       }
-    } else if (RegExp(r'[\^\+\-\*/]').hasMatch(newSymbol)) {
-      // Для арифметических операторов убедимся, что предыдущий символ не оператор
-      if (currentInput.isNotEmpty && !RegExp(r'[\^\+\-\*/]').hasMatch(currentInput[currentInput.length - 1])) {
+    } else if (newSymbol == '-' || RegExp(r'[\^\+\-\*/]').hasMatch(newSymbol)) {
+      // Разрешаем минус, если currentInput пустой
+      if (currentInput.isEmpty && newSymbol == '-') {
+        currentInput += newSymbol;
+      }
+      // Разрешаем минус после числа или оператора, если последний символ не минус
+      else if (currentInput.isNotEmpty && !currentInput.endsWith('-') && (RegExp(r'[0-9]').hasMatch(currentInput[currentInput.length - 1]) || RegExp(r'[\^\+\-\*/]').hasMatch(currentInput[currentInput.length - 1]))) {
         currentInput += newSymbol;
       }
     }else if (newSymbol == 'C') {
@@ -90,21 +94,46 @@ class _CalcHomeState extends State<CalcHome> {
 
   String refreshPreResult() {
 
-    if (input.isEmpty) return "";
+    if (input.isEmpty || !RegExp(r'[0-9]').hasMatch(input)) return "";
 
-    RegExp numRegExp = RegExp(r'\d+\.?\d*');
-    RegExp opRegExp = RegExp(r'[\^\+\-\*/]');
 
-    List<double> numbers = numRegExp.allMatches(input)
-        .map((match) => double.parse(match.group(0)!))
-        .toList();
-    List<String> operators = opRegExp.allMatches(input)
-        .map((match) => match.group(0)!)
-        .toList();
+
+    RegExp numRegExp = RegExp(r'-?\d+\.?\d*'); // Ищем чиселки, возможно с минусом
+    RegExp opRegExp = RegExp(r'[\^\+\-\*/]');  // Ищем операторы
+
+
+    List<double> numbers = [];
+    List<String> operators = [];
+
+    int index = 0;
+    bool expectOperator = false; // Флаг, ожидаем ли мы оператор
+
+    // госпади е
+    while (index < input.length) {
+      if (!expectOperator) {
+        var numMatch = numRegExp.firstMatch(input.substring(index));
+        if (numMatch != null) {
+          numbers.add(double.parse(numMatch.group(0)!));
+          index += numMatch.end;
+          expectOperator = true; // После числа ожидаем оператор
+        } else {
+          index++;
+        }
+      } else {
+        var opMatch = opRegExp.firstMatch(input.substring(index));
+        if (opMatch != null) {
+          operators.add(opMatch.group(0)!);
+          index += opMatch.end;
+          expectOperator = false; // После оператора ожидаем число
+        } else {
+          index++;
+        }
+      }
+    }
 
     try{
 
-
+      print("Считаем!");
       // Функция для выполнения операции
       double performOperation(double a, double b, String op) {
         switch (op) {
@@ -199,15 +228,27 @@ class _CalcHomeState extends State<CalcHome> {
   }
 }
 
-double pow(double a, double b){
-  double result = a;
+double pow(double a, double b) {
+  if (b == 0) {
+    return 1;
+  }
 
-  while(b > 1){
+  double result = 1;
+  bool isNegative = b < 0;
+
+  if (isNegative) {
+    a = 1 / a;
+    b = -b;
+  }
+
+  for (int i = 0; i < b; i++) {
     result *= a;
-    b--;
   }
 
   return result;
 }
+
+
+
 
 

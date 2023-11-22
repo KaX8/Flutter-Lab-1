@@ -8,7 +8,6 @@ class CalcMainControls extends StatelessWidget {
 
   const CalcMainControls({Key? key, required this.onButtonPressed}) : super(key: key);
 
-
   @override
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
@@ -41,8 +40,6 @@ class CalcMainControls extends StatelessWidget {
       children: s.map((item) => getControl(item)).toList(),
     );
   }
-
-
 
   Padding getControl(String s) {
     if (s.isNotEmpty) {
